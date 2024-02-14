@@ -9,6 +9,9 @@ pub struct GhfcFile {
 #[derive(Clone)]
 pub struct Files(pub Vec<GhfcFile>);
 
+/// If you want a `paths` entry to be the root, use `""` - might not work properly if you use "/"
+///
+/// `token`s can be generated in your Github settings
 pub fn fetch(
     user: &str,
     repo: &str,
@@ -19,7 +22,7 @@ pub fn fetch(
     let client = Client::builder().user_agent("gh-file-curler").build()?;
     let mut out = Files(vec![]);
     for path in paths {
-        let url = format!("https://api.github.com/repos/{user}/{repo}/contents/{path}");
+        let url = format!("https://api.github.com/repos/{user}/{repo}/contents{path}");
         let json = client
             .get(url)
             .header(AUTHORIZATION, format!("Bearer {token}"))
