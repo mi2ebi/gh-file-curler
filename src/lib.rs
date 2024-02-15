@@ -47,11 +47,11 @@ fn _fetch(
     for path in paths {
         let url = format!("https://api.github.com/repos/{user}/{repo}/contents{path}");
         let json = client
-            .get(url)
+            .get(&url)
             .header(AUTHORIZATION, format!("Bearer {token}"))
             .send()?
             .json::<serde_json::Value>()?;
-        let json = json.as_array().unwrap();
+        let json = json.as_array().expect(&format!("provided repo or folder might not exist: content at {url} is {json}"));
         for file in json {
             if Some("file") == file["type"].as_str() {
                 if let Some(name) = file["name"].as_str() {
@@ -65,22 +65,20 @@ fn _fetch(
                         out.0.push(f);
                     }
                 }
-            } else if Some("dir") == file["type"].as_str() {
-                if recurse {
-                    if let Some(name) = file["name"].as_str() {
-                        for x in _fetch(
-                            user,
-                            repo,
-                            speedrun,
-                            vec![&format!("{path}/{name}")],
-                            true,
-                            token,
-                        )
-                        .unwrap()
-                        .0
-                        {
-                            out.0.push(x);
-                        }
+            } else if Some("dir") == file["type"].as_str() && recurse {
+                if let Some(name) = file["name"].as_str() {
+                    for x in _fetch(
+                        user,
+                        repo,
+                        speedrun,
+                        vec![&format!("{path}/{name}")],
+                        true,
+                        token,
+                    )
+                    .unwrap()
+                    .0
+                    {
+                        out.0.push(x);
                     }
                 }
             }
