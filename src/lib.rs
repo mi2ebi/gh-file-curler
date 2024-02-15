@@ -19,6 +19,29 @@ pub fn fetch(
     recurse: bool,
     token: &str,
 ) -> Result<Files, Box<dyn Error>> {
+    _fetch(user, repo, None, paths, recurse, token)
+}
+
+/// Identical to `fetch()`, except writes folders immediately
+pub fn speedrun(
+    user: &str,
+    repo: &str,
+    out: &str,
+    paths: Vec<&str>,
+    recurse: bool,
+    token: &str,
+) -> Result<Files, Box<dyn Error>> {
+    _fetch(user, repo, Some(out), paths, recurse, token)
+}
+
+fn _fetch(
+    user: &str,
+    repo: &str,
+    speedrun: Option<&str>,
+    paths: Vec<&str>,
+    recurse: bool,
+    token: &str,
+) -> Result<Files, Box<dyn Error>> {
     let client = Client::builder().user_agent("gh-file-curler").build()?;
     let mut out = Files(vec![]);
     for path in paths {
@@ -35,18 +58,26 @@ pub fn fetch(
                     if let Some(file_url) = file["download_url"].as_str() {
                         // println!("{path}/{name}");
                         let content = client.get(file_url).send()?.bytes()?;
-                        out.0.push(GhfcFile {
+                        let f = GhfcFile {
                             name: format!("{path}/{name}"),
                             content: content.to_vec(),
-                        });
+                        };
+                        out.0.push(f);
                     }
                 }
             } else if Some("dir") == file["type"].as_str() {
                 if recurse {
                     if let Some(name) = file["name"].as_str() {
-                        for x in fetch(user, repo, vec![&format!("{path}/{name}")], true, token)
-                            .unwrap()
-                            .0
+                        for x in _fetch(
+                            user,
+                            repo,
+                            speedrun,
+                            vec![&format!("{path}/{name}")],
+                            true,
+                            token,
+                        )
+                        .unwrap()
+                        .0
                         {
                             out.0.push(x);
                         }
@@ -55,15 +86,23 @@ pub fn fetch(
             }
         }
     }
+    if let Some(s) = speedrun {
+        out.clone().write_to(s);
+    }
     Ok(out)
 }
 
 impl Files {
     pub fn write_to(self, path: &str) {
         for f in self.0 {
-            let p = format!("{path}/{}", f.name);
-            fs::create_dir_all(Path::new(&p).parent().unwrap()).unwrap();
-            fs::write(p, f.content).unwrap();
+            f.write_to(path);
         }
+    }
+}
+impl GhfcFile {
+    fn write_to(self, path: &str) {
+        let p = format!("{path}/{}", self.name);
+        fs::create_dir_all(Path::new(&p).parent().unwrap()).unwrap();
+        fs::write(p, self.content).unwrap();
     }
 }
