@@ -1,5 +1,5 @@
 use reqwest::{blocking::Client, header::AUTHORIZATION};
-use std::{error::Error, fs, path::Path};
+use std::{fs, path::Path};
 
 #[derive(Debug, Clone)]
 pub struct GhfcFile {
@@ -18,7 +18,7 @@ pub fn fetch(
     paths: Vec<&str>,
     recurse: bool,
     token: &str,
-) -> Result<Files, Box<dyn Error>> {
+) -> Result<Files, String> {
     _fetch(user, repo, None, paths, recurse, token)
 }
 
@@ -30,7 +30,7 @@ pub fn speedrun(
     paths: Vec<&str>,
     recurse: bool,
     token: &str,
-) -> Result<Files, Box<dyn Error>> {
+) -> Result<Files, String> {
     _fetch(user, repo, Some(out), paths, recurse, token)
 }
 
@@ -41,23 +41,31 @@ fn _fetch(
     paths: Vec<&str>,
     recurse: bool,
     token: &str,
-) -> Result<Files, Box<dyn Error>> {
-    let client = Client::builder().user_agent("gh-file-curler").build()?;
+) -> Result<Files, String> {
+    let client = Client::builder()
+        .user_agent("gh-file-curler")
+        .build()
+        .unwrap();
     let mut out = Files(vec![]);
     for path in paths {
         let url = format!("https://api.github.com/repos/{user}/{repo}/contents{path}");
         let json = client
             .get(&url)
             .header(AUTHORIZATION, format!("Bearer {token}"))
-            .send()?
-            .json::<serde_json::Value>()?;
-        let json = json.as_array().expect(&format!("provided repo or folder might not exist: content at {url} is {json}"));
+            .send()
+            .unwrap()
+            .json::<serde_json::Value>()
+            .unwrap();
+        if json.as_array().is_none() {
+            return Err(format!("{json}"));
+        }
+        let json = json.as_array().unwrap();
         for file in json {
             if Some("file") == file["type"].as_str() {
                 if let Some(name) = file["name"].as_str() {
                     if let Some(file_url) = file["download_url"].as_str() {
                         // println!("{path}/{name}");
-                        let content = client.get(file_url).send()?.bytes()?;
+                        let content = client.get(file_url).send().unwrap().bytes().unwrap();
                         let f = GhfcFile {
                             name: format!("{path}/{name}"),
                             content: content.to_vec(),

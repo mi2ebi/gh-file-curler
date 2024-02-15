@@ -1,3 +1,7 @@
+## 1.3.0
+
+- **breaking** - internal `_fetch` returns an `Err(`the json`)` if it isn't an array of files
+
 ## 1.2.0
 
 - replaced the json `unwrap()` with `expect()`
