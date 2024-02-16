@@ -22,7 +22,7 @@ pub fn fetch(
     _fetch(user, repo, None, paths, recurse, token)
 }
 
-/// Identical to `fetch()`, except writes folders immediately
+/// Identical to `fetch()`, except writes files immediately
 pub fn speedrun(
     user: &str,
     repo: &str,
@@ -70,7 +70,10 @@ fn _fetch(
                             name: format!("{path}/{name}"),
                             content: content.to_vec(),
                         };
-                        out.0.push(f);
+                        out.0.push(f.clone());
+                        if let Some(s) = speedrun {
+                            f.write_to(s);
+                        }                    
                     }
                 }
             } else if Some("dir") == file["type"].as_str() && recurse {
@@ -91,9 +94,6 @@ fn _fetch(
                 }
             }
         }
-    }
-    if let Some(s) = speedrun {
-        out.clone().write_to(s);
     }
     Ok(out)
 }
