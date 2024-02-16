@@ -65,7 +65,16 @@ fn _fetch(
                 if let Some(name) = file["name"].as_str() {
                     if let Some(file_url) = file["download_url"].as_str() {
                         // println!("{path}/{name}");
-                        let content = client.get(file_url).send().unwrap().bytes().unwrap();
+                        let mut content = client.get(file_url).send().unwrap().bytes();
+                        let mut i = 0;
+                        while content.is_err() && i < 3 {
+                            content = client.get(file_url).send().unwrap().bytes();
+                            i += 1;
+                        }
+                        if content.is_err() {
+                            return Err(format!("multiple requests to {file_url} timed out"));
+                        }
+                        let content = content.unwrap();
                         let f = GhfcFile {
                             name: format!("{path}/{name}"),
                             content: content.to_vec(),
@@ -73,7 +82,7 @@ fn _fetch(
                         out.0.push(f.clone());
                         if let Some(s) = speedrun {
                             f.write_to(s);
-                        }                    
+                        }
                     }
                 }
             } else if Some("dir") == file["type"].as_str() && recurse {
