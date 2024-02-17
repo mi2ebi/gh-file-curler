@@ -94,7 +94,7 @@ fn _fetch_dir(
     Ok(out)
 }
 
-fn fetch(user: &str, repo: &str, files: Vec<&str>) -> Result<Files, String> {
+pub fn fetch(user: &str, repo: &str, files: Vec<&str>) -> Result<Files, String> {
     let client = Client::builder()
         .user_agent("gh-file-curler")
         .build()
