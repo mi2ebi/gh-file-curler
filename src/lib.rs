@@ -129,7 +129,7 @@ impl Files {
     }
 }
 impl GhfcFile {
-    fn write_to(self, path: &str) {
+    pub fn write_to(self, path: &str) {
         let p = format!("{path}/{}", self.name);
         fs::create_dir_all(Path::new(&p).parent().unwrap()).unwrap();
         fs::write(p, self.content).unwrap();

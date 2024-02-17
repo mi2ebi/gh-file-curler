@@ -1,6 +1,6 @@
 [package]
 name = "gh-file-curler"
-version = "2.0.1"
+version = "2.0.2"
 edition = "2021"
 description = "Grabs only the files from a Github repo, without the Git history"
 license = "MIT OR Apache-2.0"
