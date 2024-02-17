@@ -104,19 +104,19 @@ pub fn fetch(user: &str, repo: &str, files: Vec<&str>) -> Result<Files, String> 
         .unwrap();
     let mut out = Files(vec![]);
     for file in files {
-        let file = format!("https://raw.githubusercontent.com/{user}/{repo}/{file}");
-        let mut content = client.get(&file).send().unwrap().bytes();
+        let url = format!("https://raw.githubusercontent.com/{user}/{repo}/main/{file}");
+        let mut content = client.get(&url).send().unwrap().bytes();
         let mut i = 0;
         while content.is_err() && i < 3 {
-            content = client.get(&file).send().unwrap().bytes();
+            content = client.get(&url).send().unwrap().bytes();
             i += 1;
         }
         if content.is_err() {
-            return Err(format!("multiple requests to {file} timed out"));
+            return Err(format!("multiple requests to {url} timed out"));
         }
         let content = content.unwrap();
         let f = GhfcFile {
-            name: file,
+            name: file.to_string(),
             content: content.to_vec(),
         };
         out.0.push(f);
