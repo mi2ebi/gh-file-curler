@@ -63,9 +63,12 @@ fn _fetch_dir(
         for file in json {
             if Some("file") == file["type"].as_str() {
                 if let Some(name) = file["name"].as_str() {
-                    if let Some(_) = file["download_url"].as_str() {
+                    if file["download_url"].as_str().is_some() {
                         // println!("{path}/{name}");
-                        let f = fetch(user, repo, vec![&format!("{path}/{name}")]).unwrap().0[0].clone();
+                        let f = fetch(user, repo, vec![&format!("{path}/{name}")])
+                            .unwrap()
+                            .0[0]
+                            .clone();
                         out.0.push(f.clone());
                         if let Some(s) = speedrun {
                             f.write_to(s);
@@ -113,7 +116,7 @@ pub fn fetch(user: &str, repo: &str, files: Vec<&str>) -> Result<Files, String> 
         }
         let content = content.unwrap();
         let f = GhfcFile {
-            name: format!("{file}"),
+            name: file,
             content: content.to_vec(),
         };
         out.0.push(f);
@@ -126,6 +129,14 @@ impl Files {
         for f in self.0 {
             f.write_to(path);
         }
+    }
+}
+/// Most useful on a `fetch()` call for one file
+pub fn wrapped_first(f: Result<Files, String>) -> Option<Vec<u8>> {
+    if let Ok(f) = f {
+        Some(f.0[0].clone().content)
+    } else {
+        None
     }
 }
 impl GhfcFile {
