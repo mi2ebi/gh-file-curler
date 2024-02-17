@@ -12,14 +12,14 @@ pub struct Files(pub Vec<GhfcFile>);
 /// If you want a `paths` entry to be the root, use `""` - might not work properly if you use "/"
 ///
 /// `token`s can be generated in your Github settings
-pub fn fetch(
+pub fn fetch_dir(
     user: &str,
     repo: &str,
     paths: Vec<&str>,
     recurse: bool,
     token: &str,
 ) -> Result<Files, String> {
-    _fetch(user, repo, None, paths, recurse, token)
+    _fetch_dir(user, repo, None, paths, recurse, token)
 }
 
 /// Identical to `fetch()`, except writes files immediately
@@ -31,10 +31,10 @@ pub fn speedrun(
     recurse: bool,
     token: &str,
 ) -> Result<Files, String> {
-    _fetch(user, repo, Some(out), paths, recurse, token)
+    _fetch_dir(user, repo, Some(out), paths, recurse, token)
 }
 
-fn _fetch(
+fn _fetch_dir(
     user: &str,
     repo: &str,
     speedrun: Option<&str>,
@@ -63,22 +63,9 @@ fn _fetch(
         for file in json {
             if Some("file") == file["type"].as_str() {
                 if let Some(name) = file["name"].as_str() {
-                    if let Some(file_url) = file["download_url"].as_str() {
+                    if let Some(_) = file["download_url"].as_str() {
                         // println!("{path}/{name}");
-                        let mut content = client.get(file_url).send().unwrap().bytes();
-                        let mut i = 0;
-                        while content.is_err() && i < 3 {
-                            content = client.get(file_url).send().unwrap().bytes();
-                            i += 1;
-                        }
-                        if content.is_err() {
-                            return Err(format!("multiple requests to {file_url} timed out"));
-                        }
-                        let content = content.unwrap();
-                        let f = GhfcFile {
-                            name: format!("{path}/{name}"),
-                            content: content.to_vec(),
-                        };
+                        let f = fetch(user, repo, vec![&format!("{path}/{name}")]).unwrap().0[0].clone();
                         out.0.push(f.clone());
                         if let Some(s) = speedrun {
                             f.write_to(s);
@@ -87,7 +74,7 @@ fn _fetch(
                 }
             } else if Some("dir") == file["type"].as_str() && recurse {
                 if let Some(name) = file["name"].as_str() {
-                    for x in _fetch(
+                    for x in _fetch_dir(
                         user,
                         repo,
                         speedrun,
@@ -103,6 +90,33 @@ fn _fetch(
                 }
             }
         }
+    }
+    Ok(out)
+}
+
+fn fetch(user: &str, repo: &str, files: Vec<&str>) -> Result<Files, String> {
+    let client = Client::builder()
+        .user_agent("gh-file-curler")
+        .build()
+        .unwrap();
+    let mut out = Files(vec![]);
+    for file in files {
+        let file = format!("https://raw.githubusercontent.com/{user}/{repo}/{file}");
+        let mut content = client.get(&file).send().unwrap().bytes();
+        let mut i = 0;
+        while content.is_err() && i < 3 {
+            content = client.get(&file).send().unwrap().bytes();
+            i += 1;
+        }
+        if content.is_err() {
+            return Err(format!("multiple requests to {file} timed out"));
+        }
+        let content = content.unwrap();
+        let f = GhfcFile {
+            name: format!("{file}"),
+            content: content.to_vec(),
+        };
+        out.0.push(f);
     }
     Ok(out)
 }
