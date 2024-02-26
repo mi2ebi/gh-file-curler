@@ -112,7 +112,9 @@ pub fn fetch(user: &str, repo: &str, files: Vec<&str>) -> Result<Files, String> 
             i += 1;
         }
         if content.is_err() {
-            return Err(format!("multiple requests to {url} timed out"));
+            return Err(format!(
+                "multiple requests to {url} failed (e.g. timed out)"
+            ));
         }
         let content = content.unwrap();
         let f = GhfcFile {
@@ -134,7 +136,12 @@ impl Files {
 /// Most useful on a `fetch()` call for one file
 pub fn wrapped_first(f: Result<Files, String>) -> Option<Vec<u8>> {
     if let Ok(f) = f {
-        Some(f.0[0].clone().content)
+        let x = f.0[0].clone().content;
+        if x != b"404: Not Found" {
+            Some(x)
+        } else {
+            None
+        }
     } else {
         None
     }
