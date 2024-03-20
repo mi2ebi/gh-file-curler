@@ -6,7 +6,7 @@ pub struct GhfcFile {
     pub name: String,
     pub content: Vec<u8>,
 }
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Files(pub Vec<GhfcFile>);
 
 /// If you want a `paths` entry to be the root, use `""` - might not work properly if you use "/"
@@ -134,16 +134,16 @@ impl Files {
     }
 }
 /// Most useful on a `fetch()` call for one file
-pub fn wrapped_first(f: Result<Files, String>) -> Option<Vec<u8>> {
+pub fn wrapped_first(f: Result<Files, String>) -> Result<Vec<u8>, String> {
     if let Ok(f) = f {
         let x = f.0[0].clone().content;
         if x != b"404: Not Found" {
-            Some(x)
+            Ok(x)
         } else {
-            None
+            Err(format!("could not find {}", f.0[0].name))
         }
     } else {
-        None
+        Err(f.unwrap_err())
     }
 }
 impl GhfcFile {
