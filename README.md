@@ -11,7 +11,7 @@ use std::fs;
 fn main() {
     fs::remove_dir_all("out").unwrap_or(());
     fs::create_dir("out").unwrap();
-    let the = fetch_dir("berrymot", "gh-file-curler", vec![""], true, "TOKEN")
+    let the = fetch_dir("berrymot", "gh-file-curler", &[""], true, "TOKEN")
         .unwrap();
     the.clone().write_to("out");
     println!("{} files", the.0.len());

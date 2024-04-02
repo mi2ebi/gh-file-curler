@@ -15,7 +15,7 @@ pub struct Files(pub Vec<GhfcFile>);
 pub fn fetch_dir(
     user: &str,
     repo: &str,
-    paths: Vec<&str>,
+    paths: &[&str],
     recurse: bool,
     token: &str,
 ) -> Result<Files, String> {
@@ -27,7 +27,7 @@ pub fn speedrun(
     user: &str,
     repo: &str,
     out: &str,
-    paths: Vec<&str>,
+    paths: &[&str],
     recurse: bool,
     token: &str,
 ) -> Result<Files, String> {
@@ -38,7 +38,7 @@ fn _fetch_dir(
     user: &str,
     repo: &str,
     speedrun: Option<&str>,
-    paths: Vec<&str>,
+    paths: &[&str],
     recurse: bool,
     token: &str,
 ) -> Result<Files, String> {
@@ -65,7 +65,7 @@ fn _fetch_dir(
                 if let Some(name) = file["name"].as_str() {
                     if file["download_url"].as_str().is_some() {
                         // println!("{path}/{name}");
-                        let f = fetch(user, repo, vec![&format!("{path}/{name}")])
+                        let f = fetch(user, repo, &[&format!("{path}/{name}")])
                             .unwrap()
                             .0[0]
                             .clone();
@@ -81,7 +81,7 @@ fn _fetch_dir(
                         user,
                         repo,
                         speedrun,
-                        vec![&format!("{path}/{name}")],
+                        &[&format!("{path}/{name}")],
                         true,
                         token,
                     )
@@ -97,7 +97,7 @@ fn _fetch_dir(
     Ok(out)
 }
 
-pub fn fetch(user: &str, repo: &str, files: Vec<&str>) -> Result<Files, String> {
+pub fn fetch(user: &str, repo: &str, files: &[&str]) -> Result<Files, String> {
     let client = Client::builder()
         .user_agent("gh-file-curler")
         .build()
