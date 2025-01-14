@@ -118,7 +118,7 @@ pub fn fetch(user: &str, repo: &str, files: &[&str]) -> Result<Files, String> {
         }
         let content = content.unwrap();
         let f = GhfcFile {
-            name: file.to_string(),
+            name: (*file).to_string(),
             content: content.to_vec(),
         };
         out.0.push(f);
@@ -137,10 +137,10 @@ impl Files {
 pub fn wrapped_first(f: Result<Files, String>) -> Result<Vec<u8>, String> {
     if let Ok(f) = f {
         let x = f.0[0].clone().content;
-        if x != b"404: Not Found" {
-            Ok(x)
-        } else {
+        if x == b"404: Not Found" {
             Err(format!("could not find {}", f.0[0].name))
+        } else {
+            Ok(x)
         }
     } else {
         Err(f.unwrap_err())
